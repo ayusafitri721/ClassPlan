@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-navy: #0f1d36;
+  --color-nav: #c3cedf;
+  --color-ink: #0f172a;
+  --color-muted: #55617a;
+  --color-line: #e1e5ec;
+  --color-accent: #1d4ed8;
+  --color-accent-soft: #e8effc;
+  --color-focus: #2563eb;
+  --color-ok: #15803d;
+  --color-ok-soft: #eaf5ee;
+  --color-warn: #b45309;
+  --color-warn-soft: #fdf3e7;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fdecec;
+
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --radius-card: 10px;
+}
+
+@layer base {
+  html {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  .sidebar :focus-visible {
+    outline-color: #ffffff;
+  }
+
+  ::selection {
+    background: var(--color-accent-soft);
+    color: var(--color-ink);
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .field {
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: var(--color-ink);
+    min-height: 2.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .field {
+      min-height: 2.5rem;
+    }
+  }
+
+  .field::placeholder {
+    color: #8b95a8;
+  }
+
+  .field:disabled {
+    background: #f2f4f7;
+    color: #7c879b;
+  }
+
+  .field[aria-invalid="true"] {
+    border-color: var(--color-danger);
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #ffffff;
+  }
+
+  .print-sheet {
+    border: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .print-break {
+    break-inside: avoid;
+  }
+
+  @page {
+    size: A4;
+    margin: 16mm 14mm;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
