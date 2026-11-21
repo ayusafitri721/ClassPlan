@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Select } from '../ui/Form.jsx';
 import { Notice, Skeleton } from '../ui/Feedback.jsx';
-import { periodLabel } from '../../lib/format.js';
+import { classLabel, periodLabel } from '../../lib/format.js';
 
 export function ScopeBar({ scope }) {
   if (scope.isLoading) {
@@ -44,7 +44,7 @@ export function ScopeBar({ scope }) {
           >
             {scope.classList.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.name}
+                {classLabel(item)}
               </option>
             ))}
           </Select>

@@ -10,8 +10,12 @@ const COURSE_SQL = `
          c.class_id as "classId",
          c.semester_id as "semesterId",
          cl.name as "className",
+         cl.cohort_year as "cohortYear",
          s.academic_year as "academicYear",
          s.term,
+         c.day_of_week as "dayOfWeek",
+         c.start_time as "startTime",
+         c.end_time as "endTime",
          coalesce(
            json_agg(
              json_build_object('id', l.id, 'name', l.name, 'lecturerCode', l.lecturer_code)
@@ -71,7 +75,7 @@ export async function listCourses({ classId, semesterId, search = '' }) {
   const { rows } = await pool.query(
     `${COURSE_SQL}
      ${where}
-     group by c.id, cl.name, s.academic_year, s.term
+     group by c.id, cl.name, cl.cohort_year, s.academic_year, s.term
      order by c.code`,
     params
   );
@@ -82,7 +86,7 @@ export async function getCourseById(id, db = pool) {
   const { rows } = await db.query(
     `${COURSE_SQL}
      where c.id = $1
-     group by c.id, cl.name, s.academic_year, s.term`,
+     group by c.id, cl.name, cl.cohort_year, s.academic_year, s.term`,
     [id]
   );
   if (!rows[0]) throw notFound('Mata kuliah tidak ditemukan');
@@ -95,10 +99,20 @@ export async function createCourse(input) {
     await assertLecturersExist(client, input.lecturerIds);
 
     const { rows } = await client.query(
-      `insert into courses (code, name, credits, class_id, semester_id)
-       values ($1, $2, $3, $4, $5)
+      `insert into courses
+         (code, name, credits, class_id, semester_id, day_of_week, start_time, end_time)
+       values ($1, $2, $3, $4, $5, $6, $7, $8)
        returning id`,
-      [input.code, input.name, input.credits, input.classId, input.semesterId]
+      [
+        input.code,
+        input.name,
+        input.credits,
+        input.classId,
+        input.semesterId,
+        input.dayOfWeek ?? null,
+        input.startTime ?? null,
+        input.endTime ?? null,
+      ]
     );
 
     await replaceLecturers(client, rows[0].id, input.lecturerIds);
@@ -117,9 +131,22 @@ export async function updateCourse(id, input) {
               name = $2,
               credits = $3,
               class_id = $4,
-              semester_id = $5
-        where id = $6`,
-      [input.code, input.name, input.credits, input.classId, input.semesterId, id]
+              semester_id = $5,
+              day_of_week = $6,
+              start_time = $7,
+              end_time = $8
+        where id = $9`,
+      [
+        input.code,
+        input.name,
+        input.credits,
+        input.classId,
+        input.semesterId,
+        input.dayOfWeek ?? null,
+        input.startTime ?? null,
+        input.endTime ?? null,
+        id,
+      ]
     );
 
     if (rowCount === 0) throw notFound('Mata kuliah tidak ditemukan');

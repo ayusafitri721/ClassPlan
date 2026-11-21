@@ -28,13 +28,13 @@ export const deleteSemester = (id) => api.delete(`/semesters/${id}`);
 export const getSettings = () => api.get('/settings');
 export const updateSettings = (body) => api.put('/settings', body);
 
-export const getDashboard = ({ classId, semesterId } = {}) =>
-  api.get(`/dashboard${toQuery({ classId, semesterId })}`);
-export const getGraph = ({ classId, semesterId, conflictMode } = {}) =>
-  api.get(`/graph${toQuery({ classId, semesterId, conflictMode })}`);
+export const getDashboard = ({ classId, classIds, semesterId } = {}) =>
+  api.get(`/dashboard${toQuery({ classId, classIds, semesterId })}`);
+export const getGraph = ({ classId, classIds, semesterId, conflictMode } = {}) =>
+  api.get(`/graph${toQuery({ classId, classIds, semesterId, conflictMode })}`);
 
-export const getRuns = ({ classId, semesterId } = {}) =>
-  api.get(`/scheduling-runs${toQuery({ classId, semesterId })}`);
+export const getRuns = ({ classId, classIds, semesterId } = {}) =>
+  api.get(`/scheduling-runs${toQuery({ classId, classIds, semesterId })}`);
 export const createRun = (body) => api.post('/scheduling-runs', body);
 export const getRun = (id) => api.get(`/scheduling-runs/${id}`);
 export const getReport = (id) => api.get(`/scheduling-runs/${id}/report`);

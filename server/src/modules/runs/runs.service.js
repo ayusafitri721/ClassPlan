@@ -1,6 +1,10 @@
 import { LIMITS } from '@classplan/shared';
 import { pool, withTransaction } from '../../db/pool.js';
-import { assertScopeExists, fetchScopeCourses } from '../../db/courseQueries.js';
+import {
+  assertScopesExist,
+  fetchScopeCourses,
+  normalizeClassIds,
+} from '../../db/courseQueries.js';
 import { analyze } from '../../algorithm/analyze.js';
 import { AppError, notFound, unprocessable } from '../../utils/errors.js';
 import { getSettings } from '../settings/settings.service.js';
@@ -12,11 +16,14 @@ const RUN_SQL = `
          r.class_id as "classId",
          r.semester_id as "semesterId",
          cl.name as "className",
+         cl.cohort_year as "cohortYear",
          cl.study_program as "studyProgram",
          s.academic_year as "academicYear",
          s.term,
          r.conflict_mode as "conflictMode",
          r.tie_break_rule as "tieBreakRule",
+         r.scope_label as "scopeLabel",
+         r.is_combined as "isCombined",
          r.status,
          r.vertex_count as "vertexCount",
          r.edge_count as "edgeCount",
@@ -31,10 +38,42 @@ const RUN_SQL = `
     join semesters s on s.id = r.semester_id
 `;
 
-export async function createRun({ classId, semesterId, conflictMode, tieBreakRule, userId }) {
-  await assertScopeExists(classId, semesterId);
+function buildScopeLabel(courses) {
+  const cohorts = [...new Set(courses.map((course) => course.cohortYear))]
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+  const name = courses[0]?.className ?? 'Kelas';
 
-  const courses = await fetchScopeCourses(classId, semesterId);
+  if (cohorts.length <= 1) return `${name} – Angkatan ${cohorts[0] ?? '-'}`;
+  return `${name} – Angkatan ${cohorts.join(' + ')} (Gabungan)`;
+}
+
+// Kode mata kuliah harus unik di dalam satu graf. Kalau dua kelas memakai
+// kode yang sama, beri akhiran angkatan pada snapshot dan hasilnya.
+function disambiguateCodes(courses) {
+  const counts = new Map();
+  for (const course of courses) {
+    counts.set(course.code, (counts.get(course.code) ?? 0) + 1);
+  }
+  return courses.map((course) =>
+    counts.get(course.code) > 1
+      ? { ...course, code: `${course.code}-${course.cohortYear}` }
+      : course
+  );
+}
+
+export async function createRun({
+  classId,
+  classIds,
+  semesterId,
+  conflictMode,
+  tieBreakRule,
+  userId,
+}) {
+  const ids = normalizeClassIds(classId, classIds);
+  await assertScopesExist(ids, semesterId);
+
+  const courses = disambiguateCodes(await fetchScopeCourses(ids, semesterId));
 
   if (courses.length === 0) {
     throw unprocessable(
@@ -88,17 +127,20 @@ export async function createRun({ classId, semesterId, conflictMode, tieBreakRul
     appVersion: '0.1.0',
   };
 
+  const scopeLabel = buildScopeLabel(courses);
+
   const runId = await withTransaction(async (client) => {
     const { rows } = await client.query(
       `insert into scheduling_runs
          (class_id, semester_id, conflict_mode, tie_break_rule, status,
           vertex_count, edge_count, color_count, validation_status,
-          graph_snapshot, trace, settings_snapshot, created_by)
+          graph_snapshot, trace, settings_snapshot, created_by,
+          scope_label, is_combined)
        values ($1, $2, $3, $4::jsonb, 'completed', $5, $6, $7, $8,
-               $9::jsonb, $10::jsonb, $11::jsonb, $12)
+               $9::jsonb, $10::jsonb, $11::jsonb, $12, $13, $14)
        returning id`,
       [
-        classId,
+        ids[0],
         semesterId,
         conflictMode,
         JSON.stringify(tieBreakRule),
@@ -110,20 +152,30 @@ export async function createRun({ classId, semesterId, conflictMode, tieBreakRul
         JSON.stringify(analysis.trace),
         JSON.stringify(settingsSnapshot),
         userId ?? null,
+        scopeLabel,
+        ids.length > 1,
       ]
     );
 
-    const ids = analysis.graph.vertices.map((vertex) => vertex.id);
-    const colors = analysis.graph.vertices.map((vertex) =>
-      analysis.coloring.colorOf.get(vertex.code)
-    );
+    for (const id of ids) {
+      await client.query(
+        'insert into run_scopes (run_id, class_id) values ($1, $2)',
+        [rows[0].id, id]
+      );
+    }
 
+    const vertices = analysis.graph.vertices;
     await client.query(
-      `insert into schedule_results (run_id, course_id, course_code, course_name, color_number)
-       select $1, c.id, c.code, c.name, item.color
-         from unnest($2::bigint[], $3::int[]) as item(id, color)
-         join courses c on c.id = item.id`,
-      [rows[0].id, ids, colors]
+      `insert into schedule_results
+         (run_id, course_id, course_code, course_name, color_number)
+       select * from unnest($1::bigint[], $2::bigint[], $3::text[], $4::text[], $5::int[])`,
+      [
+        vertices.map(() => rows[0].id),
+        vertices.map((vertex) => vertex.id),
+        vertices.map((vertex) => vertex.code),
+        vertices.map((vertex) => vertex.name),
+        vertices.map((vertex) => analysis.coloring.colorOf.get(vertex.code)),
+      ]
     );
 
     return rows[0].id;
@@ -132,13 +184,18 @@ export async function createRun({ classId, semesterId, conflictMode, tieBreakRul
   return getRunById(runId);
 }
 
-export async function listRuns({ classId, semesterId }) {
+export async function listRuns({ classId, classIds, semesterId }) {
   const conditions = [];
   const params = [];
+  const ids = normalizeClassIds(classId, classIds).filter(Boolean);
 
-  if (classId) {
-    params.push(classId);
-    conditions.push(`r.class_id = $${params.length}`);
+  if (ids.length) {
+    params.push(ids);
+    conditions.push(
+      `(r.class_id = any($${params.length}::bigint[])
+        or exists (select 1 from run_scopes rs
+                    where rs.run_id = r.id and rs.class_id = any($${params.length}::bigint[])))`
+    );
   }
   if (semesterId) {
     params.push(semesterId);
@@ -154,6 +211,8 @@ export async function listRuns({ classId, semesterId }) {
             s.academic_year as "academicYear",
             s.term,
             r.conflict_mode as "conflictMode",
+            r.scope_label as "scopeLabel",
+            r.is_combined as "isCombined",
             r.vertex_count as "vertexCount",
             r.edge_count as "edgeCount",
             r.color_count as "colorCount",
@@ -176,14 +235,18 @@ export async function getRunById(id) {
   const run = rows[0];
   if (!run) throw notFound('Proses analisis tidak ditemukan');
 
-  const resultQuery = await pool.query(
-    `select course_code as code, course_name as name, color_number as color
-       from schedule_results
-      where run_id = $1
-      order by color_number, course_code`,
-    [id]
-  );
+  const [resultQuery, scopeRows] = await Promise.all([
+    pool.query(
+      `select course_code as code, course_name as name, color_number as color
+         from schedule_results
+        where run_id = $1
+        order by color_number, course_code`,
+      [id]
+    ),
+    pool.query('select class_id from run_scopes where run_id = $1 order by class_id', [id]),
+  ]);
 
+  const classIds = scopeRows.rows.map((row) => row.class_id);
   const byCode = new Map(
     (run.graphSnapshot?.vertices ?? []).map((vertex) => [vertex.code, vertex])
   );
@@ -207,7 +270,12 @@ export async function getRunById(id) {
     group.totalCredits += course.credits;
   }
 
-  return { ...run, results: resultQuery.rows, groups };
+  return {
+    ...run,
+    classIds: classIds.length ? classIds : [run.classId],
+    results: resultQuery.rows,
+    groups,
+  };
 }
 
 export async function getRunReport(id) {

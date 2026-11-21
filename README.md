@@ -74,6 +74,30 @@ ClassPlan/
   docs/              Rencana, desain, verifikasi
 ```
 
+## Cakupan data
+
+Seed memuat dua kelas pada semester 2026/2027 ganjil. Angkatan adalah kolom
+pada tabel `classes`, terpisah dari tahun akademik di tabel `semesters`.
+
+| Cakupan | Mata kuliah | Sisi konflik dosen | Warna | Status |
+|---------|-------------|--------------------|-------|--------|
+| Kelas D angkatan 2026 | 10 | 5 | 3 | Optimal |
+| Kelas D angkatan 2025 | 14 | 16 | 5 | Optimal |
+| Gabungan 2025 + 2026 | 24 | 34 | 7 | Optimal |
+
+Angkatan 2026 tetap menjadi scope default supaya hasil studi kasus lama
+(10/5/3) tidak berubah. Analisis bisa dijalankan per angkatan atau untuk
+semua kelas sekaligus lewat opsi "Gabungkan semua kelas" di halaman
+Welch Powell. Graf pratinjau punya opsi cakupan yang sama.
+
+Jadwal kuliah (hari, jam mulai, jam selesai) disimpan sebagai metadata dan
+tampil di tabel mata kuliah serta laporan. Jadwal **tidak** dipakai sebagai
+aturan pembentuk sisi; konflik tetap ditentukan oleh kesamaan dosen.
+
+Dosen yang sama antarangkatan dinormalisasi ke satu ID. Galih Prakoso Rizky A
+mengampu 7 mata kuliah lintas angkatan dan membentuk clique berukuran 7,
+sehingga batas bawah gabungan adalah 7 warna.
+
 ## Alur analisis
 
 1. Mata kuliah pada kelas dan semester terpilih dibentuk menjadi simpul.
@@ -109,4 +133,10 @@ Halaman Laporan memakai tata letak A4 dan tombol cetak peramban untuk menyimpan 
 npm test
 ```
 
-Uji mencakup pembentukan graf, urutan dan pemecah seri, Welch Powell pada graf kosong, lengkap, dan K3, validasi pewarnaan, serta studi kasus 10 mata kuliah dengan 5 sisi dan 3 warna.
+Uji mencakup pembentukan graf, urutan dan pemecah seri, Welch Powell pada graf kosong, lengkap, dan K3, validasi pewarnaan, studi kasus 10 mata kuliah dengan 5 sisi dan 3 warna, scope angkatan 2025 (14 simpul, 16 sisi, 5 warna), serta scope gabungan (24 simpul, 34 sisi, 7 warna).
+
+`algorithmRigor.test.js` menguji logika lebih dalam: perbandingan `maxClique`
+dengan brute force pada 30 graf acak, fallback greedy di atas 32 simpul,
+invarian pewarnaan pada 30 graf acak, determinisme, kesesuaian trace dengan
+hasil akhir, contoh graf yang membuktikan Welch Powell tidak selalu minimum,
+matriks ketetanggaan, dan escape CSV.

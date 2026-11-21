@@ -128,7 +128,9 @@ export default function DashboardPage() {
                     <h2 className="text-base font-semibold">Analisis terakhir</h2>
                     <p className="mt-0.5 text-[13px] text-muted">
                       {data.lastRun
-                        ? formatDateTime(data.lastRun.createdAt)
+                        ? `${formatDateTime(data.lastRun.createdAt)} · ${
+                            data.lastRun.scopeLabel ?? ''
+                          }`
                         : 'Belum ada proses analisis pada scope ini.'}
                     </p>
                   </div>

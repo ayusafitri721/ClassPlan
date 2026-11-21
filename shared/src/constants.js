@@ -41,6 +41,22 @@ export const DEFAULT_TIE_BREAK_RULE = [
   TIE_BREAK.COURSE_CODE_ASC,
 ];
 
+export const DAY = {
+  SENIN: 'senin',
+  SELASA: 'selasa',
+  RABU: 'rabu',
+  KAMIS: 'kamis',
+  JUMAT: 'jumat',
+};
+
+export const DAY_LABEL = {
+  [DAY.SENIN]: 'Senin',
+  [DAY.SELASA]: 'Selasa',
+  [DAY.RABU]: 'Rabu',
+  [DAY.KAMIS]: 'Kamis',
+  [DAY.JUMAT]: 'Jumat',
+};
+
 export const TERM = {
   GANJIL: 'ganjil',
   GENAP: 'genap',

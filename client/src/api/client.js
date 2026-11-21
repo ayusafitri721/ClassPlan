@@ -45,6 +45,10 @@ export function toQuery(params) {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null || value === '') continue;
+    if (Array.isArray(value)) {
+      if (value.length) search.set(key, value.join(','));
+      continue;
+    }
     if (typeof value === 'object' || typeof value === 'function') continue;
     search.set(key, String(value));
   }

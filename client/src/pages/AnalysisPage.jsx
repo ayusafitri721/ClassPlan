@@ -444,6 +444,7 @@ function RunSetup({ scope, dashboard, settings, onRun, pending }) {
       (option) => JSON.stringify(option.rule) === JSON.stringify(settings?.tieBreakRule)
     ) ?? TIE_BREAK_RULE_OPTIONS[0];
   const [ruleValue, setRuleValue] = useState(preferredRule.value);
+  const [combined, setCombined] = useState(false);
   const location = useLocation();
 
   const data = dashboard?.data?.dashboard;
@@ -538,6 +539,32 @@ function RunSetup({ scope, dashboard, settings, onRun, pending }) {
           </p>
         </div>
 
+        <div>
+          <span className="mb-1.5 block text-[13px] font-medium text-ink">Cakupan analisis</span>
+          <label className="flex min-h-11 cursor-pointer items-start gap-2.5 rounded-md border border-line px-3 py-2.5 hover:bg-canvas">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[#1d4ed8]"
+              checked={combined}
+              onChange={(event) => setCombined(event.target.checked)}
+              disabled={scope.classList.length < 2}
+            />
+            <span className="text-sm leading-5">
+              <span className="font-medium">Gabungkan semua kelas</span>
+              <span className="mt-0.5 block text-[13px] text-muted">
+                {scope.classList.length < 2
+                  ? 'Tambahkan minimal dua kelas di Pengaturan untuk memakai mode gabungan.'
+                  : `Satu analisis untuk ${scope.classList.length} kelas sekaligus. Graf dan trace disimpan sebagai satu snapshot.`}
+              </span>
+            </span>
+          </label>
+          {combined ? (
+            <p className="mt-1.5 text-[13px] leading-5 text-muted">
+              Ringkasan data di sebelah kiri tetap menampilkan kelas terpilih saja.
+            </p>
+          ) : null}
+        </div>
+
         <Notice tone="info">
           Analisis menyimpan snapshot graf dan langkah pewarnaan. Perubahan data setelah ini tidak
           mengubah hasil yang sudah tersimpan.
@@ -547,7 +574,7 @@ function RunSetup({ scope, dashboard, settings, onRun, pending }) {
           <Button
             variant="primary"
             className="w-full"
-            onClick={() => onRun(selectedRule)}
+            onClick={() => onRun(selectedRule, combined)}
             loading={pending}
             disabled={!ready}
           >
@@ -590,10 +617,11 @@ export default function AnalysisPage() {
   const courses = coursesQuery.data?.courses ?? [];
   const run = analyze.data?.run ?? null;
 
-  const start = async (tieBreakRule) => {
+  const start = async (tieBreakRule, combined) => {
     try {
       const response = await analyze.mutateAsync({
         classId: scope.classId,
+        classIds: combined ? scope.classList.map((item) => item.id) : undefined,
         semesterId: scope.semesterId,
         conflictMode: CONFLICT_MODE.LECTURER,
         tieBreakRule,

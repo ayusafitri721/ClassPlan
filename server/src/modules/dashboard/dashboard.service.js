@@ -1,20 +1,25 @@
 import { pool } from '../../db/pool.js';
-import { fetchScopeCourses, assertScopeExists } from '../../db/courseQueries.js';
+import {
+  fetchScopeCourses,
+  assertScopesExist,
+  normalizeClassIds,
+} from '../../db/courseQueries.js';
 import { buildGraph } from '../../algorithm/buildGraph.js';
 import { badRequest } from '../../utils/errors.js';
 
-export async function getDashboard({ classId, semesterId }) {
-  if (!classId || !semesterId) {
+export async function getDashboard({ classId, classIds, semesterId }) {
+  const ids = normalizeClassIds(classId, classIds);
+  if (!ids.length || !semesterId) {
     throw badRequest('Pilih kelas dan semester terlebih dahulu', {
       classId: 'Kelas wajib dipilih',
       semesterId: 'Semester wajib dipilih',
     });
   }
 
-  await assertScopeExists(classId, semesterId);
+  await assertScopesExist(ids, semesterId);
 
   const [courses, lecturerResult, lastRunResult] = await Promise.all([
-    fetchScopeCourses(classId, semesterId),
+    fetchScopeCourses(ids, semesterId),
     pool.query('select count(*)::int as count from lecturers'),
     pool.query(
       `select r.id,
@@ -23,13 +28,18 @@ export async function getDashboard({ classId, semesterId }) {
               r.color_count as "colorCount",
               r.validation_status as "validationStatus",
               r.conflict_mode as "conflictMode",
+              r.scope_label as "scopeLabel",
+              r.is_combined as "isCombined",
               r.created_at as "createdAt",
               r.settings_snapshot -> 'optimality' as optimality
          from scheduling_runs r
-        where r.class_id = $1 and r.semester_id = $2
+        where (r.semester_id = $2)
+          and (r.class_id = any($1::bigint[])
+               or exists (select 1 from run_scopes rs
+                           where rs.run_id = r.id and rs.class_id = any($1::bigint[])))
         order by r.created_at desc
         limit 1`,
-      [classId, semesterId]
+      [ids, semesterId]
     ),
   ]);
 

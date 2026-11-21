@@ -206,7 +206,11 @@ function ClassForm({ item, onClose }) {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(classInputSchema),
-    defaultValues: { name: item?.name ?? '', studyProgram: item?.studyProgram ?? '' },
+    defaultValues: {
+      name: item?.name ?? '',
+      studyProgram: item?.studyProgram ?? '',
+      cohortYear: item?.cohortYear ?? new Date().getFullYear(),
+    },
   });
 
   const submit = handleSubmit(async (values) => {
@@ -233,6 +237,15 @@ function ClassForm({ item, onClose }) {
         error={errors.studyProgram?.message}
       >
         <Input placeholder="Teknik Informatika" {...register('studyProgram')} />
+      </TextField>
+      <TextField
+        name="class-cohort"
+        label="Angkatan"
+        required
+        error={errors.cohortYear?.message}
+        hint="Tahun masuk mahasiswa, misalnya 2025. Berbeda dengan tahun akademik."
+      >
+        <Input type="number" min="1900" max="2100" {...register('cohortYear')} />
       </TextField>
       <div className="flex flex-col-reverse gap-2 border-t border-line pt-4 sm:flex-row sm:justify-end">
         <Button onClick={onClose} disabled={save.isPending}>
@@ -347,6 +360,7 @@ function ClassesSection() {
             <THead>
               <TR>
                 <TH>Nama kelas</TH>
+                <TH className="w-[100px]">Angkatan</TH>
                 <TH>Program studi</TH>
                 <TH className="w-[100px] text-right">Mata kuliah</TH>
                 <TH className="w-[150px] text-right">Aksi</TH>
@@ -356,6 +370,7 @@ function ClassesSection() {
               {classes.map((item) => (
                 <TR key={item.id}>
                   <TD className="font-medium">{item.name}</TD>
+                  <TD className="tabular text-muted">{item.cohortYear}</TD>
                   <TD className="text-[13px] text-muted">{item.studyProgram}</TD>
                   <TD className="text-right tabular text-muted">{item.courseCount}</TD>
                   <TD>

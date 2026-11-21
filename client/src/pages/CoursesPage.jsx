@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { courseInputSchema } from '@classplan/shared';
+import { courseInputSchema, DAY, DAY_LABEL } from '@classplan/shared';
 import { useCourseMutations, useCourses, useLecturers } from '../hooks/queries.js';
 import { useScope } from '../hooks/useScope.js';
 import { PageHeader } from '../components/layout/PageHeader.jsx';
@@ -12,7 +12,7 @@ import { ConfirmDialog, Modal } from '../components/ui/Modal.jsx';
 import { Badge, EmptyState, ErrorState, Notice, TableSkeleton } from '../components/ui/Feedback.jsx';
 import { Table, TBody, TD, TH, THead, TR } from '../components/ui/Table.jsx';
 import { useToast } from '../components/ui/Toast.jsx';
-import { lecturerNames, periodLabel } from '../lib/format.js';
+import { formatSchedule, lecturerNames, periodLabel } from '../lib/format.js';
 
 function CourseForm({ course, scope, lecturers, onClose, onSaved }) {
   const { save } = useCourseMutations();
@@ -34,6 +34,9 @@ function CourseForm({ course, scope, lecturers, onClose, onSaved }) {
       classId: course?.classId ?? scope.classId,
       semesterId: course?.semesterId ?? scope.semesterId,
       lecturerIds: course?.lecturers?.map((lecturer) => lecturer.id) ?? [],
+      dayOfWeek: course?.dayOfWeek ?? '',
+      startTime: course?.startTime?.slice(0, 5) ?? '',
+      endTime: course?.endTime?.slice(0, 5) ?? '',
     },
   });
 
@@ -94,6 +97,38 @@ function CourseForm({ course, scope, lecturers, onClose, onSaved }) {
           </Select>
         </TextField>
       </div>
+
+      <fieldset className="rounded-md border border-line bg-canvas px-3 py-3">
+        <legend className="px-1 text-[13px] font-medium text-ink">
+          Jadwal kuliah <span className="font-normal text-muted">(opsional, metadata)</span>
+        </legend>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <TextField
+            name="dayOfWeek"
+            label="Hari"
+            error={errors.dayOfWeek?.message}
+            hint="Boleh dikosongkan."
+          >
+            <Select {...register('dayOfWeek')}>
+              <option value="">Tidak ditentukan</option>
+              {Object.values(DAY).map((day) => (
+                <option key={day} value={day}>
+                  {DAY_LABEL[day]}
+                </option>
+              ))}
+            </Select>
+          </TextField>
+          <TextField name="startTime" label="Mulai" error={errors.startTime?.message}>
+            <Input type="time" {...register('startTime')} />
+          </TextField>
+          <TextField name="endTime" label="Selesai" error={errors.endTime?.message}>
+            <Input type="time" {...register('endTime')} />
+          </TextField>
+        </div>
+        <p className="mt-2 text-[13px] leading-5 text-muted">
+          Jadwal hanya untuk keterangan laporan. Konflik tetap dihitung dari kesamaan dosen.
+        </p>
+      </fieldset>
 
       <Controller
         control={control}
@@ -264,7 +299,7 @@ export default function CoursesPage() {
               />
             </div>
           ) : (
-            <Table minWidth="min-w-[860px]">
+            <Table minWidth="min-w-[980px]">
               <THead>
                 <TR>
                   <TH className="sticky left-0 z-10 w-[110px] border-r border-line bg-canvas">Kode</TH>
@@ -272,6 +307,7 @@ export default function CoursesPage() {
                   <TH className="w-[64px] text-right">SKS</TH>
                   <TH className="w-[150px]">Kelas</TH>
                   <TH className="w-[170px]">Semester</TH>
+                  <TH className="w-[150px]">Jadwal</TH>
                   <TH>Dosen</TH>
                   <TH className="w-[130px] text-right">Aksi</TH>
                 </TR>
@@ -286,6 +322,7 @@ export default function CoursesPage() {
                     <TD className="text-muted">
                       {periodLabel(course.academicYear, course.term)}
                     </TD>
+                    <TD className="text-[13px] text-muted">{formatSchedule(course)}</TD>
                     <TD>
                       {course.lecturers.length === 0 ? (
                         <Badge tone="warn">Belum ada dosen</Badge>

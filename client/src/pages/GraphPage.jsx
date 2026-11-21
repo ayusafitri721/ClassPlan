@@ -189,10 +189,15 @@ function CanvasSkeleton() {
 export default function GraphPage() {
   const scope = useScope();
   const [conflictMode, setConflictMode] = useState(CONFLICT_MODE.LECTURER);
+  const [combined, setCombined] = useState(false);
   const [selection, setSelection] = useState(null);
   const [layoutKey, setLayoutKey] = useState(0);
 
-  const graphQuery = useGraph({ ...scope, conflictMode });
+  const graphQuery = useGraph({
+    ...scope,
+    classIds: combined ? scope.classList.map((item) => item.id) : undefined,
+    conflictMode,
+  });
   const graph = graphQuery.data?.graph;
 
   const selectedVertex = useMemo(
@@ -240,6 +245,23 @@ export default function GraphPage() {
                 <option value={CONFLICT_MODE.LECTURER}>
                   {CONFLICT_MODE_LABEL[CONFLICT_MODE.LECTURER]}
                 </option>
+              </Select>
+            </div>
+            <div className="w-full lg:w-64">
+              <label htmlFor="graph-scope" className="mb-1.5 block text-[13px] font-medium text-ink">
+                Cakupan
+              </label>
+              <Select
+                id="graph-scope"
+                value={combined ? 'combined' : 'single'}
+                onChange={(event) => {
+                  setCombined(event.target.value === 'combined');
+                  setSelection(null);
+                }}
+                disabled={scope.classList.length < 2}
+              >
+                <option value="single">Kelas terpilih</option>
+                <option value="combined">Semua kelas (gabungan)</option>
               </Select>
             </div>
             <p className="flex-1 text-[13px] leading-5 text-muted">

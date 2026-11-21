@@ -1,16 +1,21 @@
-import { assertScopeExists, fetchScopeCourses } from '../../db/courseQueries.js';
+import {
+  assertScopesExist,
+  fetchScopeCourses,
+  normalizeClassIds,
+} from '../../db/courseQueries.js';
 import { buildGraph } from '../../algorithm/buildGraph.js';
 
-export async function getGraphPreview({ classId, semesterId, conflictMode }) {
-  await assertScopeExists(classId, semesterId);
+export async function getGraphPreview({ classId, classIds, semesterId, conflictMode }) {
+  const ids = normalizeClassIds(classId, classIds);
+  await assertScopesExist(ids, semesterId);
 
-  const courses = await fetchScopeCourses(classId, semesterId);
+  const courses = await fetchScopeCourses(ids, semesterId);
   const graph = buildGraph(courses, { mode: conflictMode });
 
   const vertices = [...graph.vertices].sort((a, b) => a.code.localeCompare(b.code, 'id'));
 
   return {
-    classId,
+    classIds: ids,
     semesterId,
     conflictMode,
     vertexCount: vertices.length,

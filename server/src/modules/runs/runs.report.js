@@ -30,6 +30,9 @@ export function buildReport(run) {
       name: item.name,
       credits: item.credits,
       degree: item.degree,
+      dayOfWeek: vertex?.dayOfWeek ?? null,
+      startTime: vertex?.startTime ?? null,
+      endTime: vertex?.endTime ?? null,
       lecturers: vertex?.lecturers ?? [],
     };
   });
@@ -48,6 +51,8 @@ export function buildReport(run) {
       institutionName: run.settingsSnapshot?.institutionName ?? '',
       studyProgram: run.studyProgram,
       className: run.className,
+      scopeLabel: run.scopeLabel || run.className,
+      isCombined: Boolean(run.isCombined),
       academicYear: run.academicYear,
       term: run.term,
       conflictMode: run.conflictMode,

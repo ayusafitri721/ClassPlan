@@ -9,7 +9,7 @@ import { useScope } from '../hooks/useScope.js';
 import { PageHeader } from '../components/layout/PageHeader.jsx';
 import { Button, buttonClass } from '../components/ui/Button.jsx';
 import { Badge, ErrorState, PageLoading } from '../components/ui/Feedback.jsx';
-import { formatDateTime, lecturerNames, periodLabel } from '../lib/format.js';
+import { formatDateTime, formatSchedule, lecturerNames, periodLabel } from '../lib/format.js';
 import { groupStyle } from '../lib/colors.js';
 
 function SheetSection({ number, title, children, breakInside = true }) {
@@ -90,7 +90,7 @@ function ReportSheet({ report }) {
             </h1>
             <p className="mt-1 text-[13px] text-muted">
               {meta.studyProgram ? `${meta.studyProgram} · ` : ''}
-              {meta.className} · {periodLabel(meta.academicYear, meta.term)}
+              {meta.scopeLabel ?? meta.className} · {periodLabel(meta.academicYear, meta.term)}
             </p>
           </div>
           <div className="text-right text-[11px] leading-5 text-muted">
@@ -106,7 +106,7 @@ function ReportSheet({ report }) {
           items={[
             { label: 'Institusi', value: meta.institutionName || '-' },
             { label: 'Program studi', value: meta.studyProgram || '-' },
-            { label: 'Kelas', value: meta.className },
+            { label: 'Cakupan', value: meta.scopeLabel ?? meta.className },
             { label: 'Semester', value: periodLabel(meta.academicYear, meta.term) },
             {
               label: 'Mode konflik',
@@ -152,8 +152,8 @@ function ReportSheet({ report }) {
 
       <SheetSection number={3} title="Data mata kuliah">
         <ReportTable
-          head={['Kode', 'Mata kuliah', 'SKS', 'Derajat', 'Dosen pengampu']}
-          align={['left', 'left', 'right', 'right', 'left']}
+          head={['Kode', 'Mata kuliah', 'SKS', 'Derajat', 'Waktu', 'Dosen pengampu']}
+          align={['left', 'left', 'right', 'right', 'left', 'left']}
         >
           {report.courses.map((course) => (
             <tr key={course.code}>
@@ -161,6 +161,7 @@ function ReportSheet({ report }) {
               <Cell>{course.name}</Cell>
               <Cell right>{course.credits}</Cell>
               <Cell right>{course.degree}</Cell>
+              <Cell>{formatSchedule(course)}</Cell>
               <Cell>{lecturerNames(course.lecturers)}</Cell>
             </tr>
           ))}

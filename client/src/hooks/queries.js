@@ -33,21 +33,21 @@ export const useCourses = (scope) =>
 
 export const useDashboard = (scope) =>
   useQuery({
-    queryKey: ['dashboard', scope.classId, scope.semesterId],
+    queryKey: ['dashboard', scope.classId, scope.classIds, scope.semesterId],
     queryFn: () => endpoints.getDashboard(scope),
     enabled: Boolean(scope.classId && scope.semesterId),
   });
 
 export const useGraph = (scope) =>
   useQuery({
-    queryKey: ['graph', scope.classId, scope.semesterId, scope.conflictMode],
+    queryKey: ['graph', scope.classId, scope.classIds, scope.semesterId, scope.conflictMode],
     queryFn: () => endpoints.getGraph(scope),
     enabled: Boolean(scope.classId && scope.semesterId),
   });
 
 export const useRuns = (scope = {}) =>
   useQuery({
-    queryKey: ['runs', scope.classId, scope.semesterId],
+    queryKey: ['runs', scope.classId, scope.classIds, scope.semesterId],
     queryFn: () => endpoints.getRuns(scope),
   });
 

@@ -4,7 +4,8 @@ import { AppError } from '../utils/errors.js';
 const CONSTRAINT_MESSAGES = {
   courses_code_class_id_semester_id_key:
     'Kode mata kuliah sudah dipakai pada kelas dan semester ini',
-  classes_name_study_program_key: 'Kelas dengan nama dan program studi itu sudah ada',
+  classes_name_study_program_cohort_key:
+    'Kelas dengan nama, program studi, dan angkatan itu sudah ada',
   semesters_academic_year_term_key: 'Semester dengan tahun dan term itu sudah ada',
   course_lecturers_course_id_lecturer_id_key: 'Dosen sudah terhubung ke mata kuliah ini',
   users_email_uidx: 'Email sudah terdaftar',

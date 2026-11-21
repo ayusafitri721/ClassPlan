@@ -1,4 +1,4 @@
-import { TERM_LABEL } from '@classplan/shared';
+import { DAY_LABEL, TERM_LABEL } from '@classplan/shared';
 
 const dateTime = new Intl.DateTimeFormat('id-ID', {
   dateStyle: 'medium',
@@ -29,6 +29,19 @@ export function periodLabel(academicYear, term) {
 export function lecturerNames(lecturers = []) {
   if (!lecturers.length) return 'Belum ada dosen';
   return lecturers.map((lecturer) => lecturer.name).join(', ');
+}
+
+export function classLabel(item) {
+  if (!item) return '-';
+  return item.cohortYear ? `${item.name} – Angkatan ${item.cohortYear}` : item.name;
+}
+
+export function formatSchedule(course) {
+  if (!course?.dayOfWeek) return '-';
+  const day = DAY_LABEL[course.dayOfWeek] ?? course.dayOfWeek;
+  const start = course.startTime?.slice(0, 5) ?? '';
+  const end = course.endTime?.slice(0, 5) ?? '';
+  return start && end ? `${day} ${start}–${end}` : day;
 }
 
 export function plural(count, singular, pluralWord) {

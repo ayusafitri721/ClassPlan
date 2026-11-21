@@ -8,7 +8,13 @@ import { ScopeBar } from '../components/layout/ScopeBar.jsx';
 import { Button, buttonClass } from '../components/ui/Button.jsx';
 import { Select } from '../components/ui/Form.jsx';
 import { Badge, EmptyState, ErrorState, Notice, PageLoading } from '../components/ui/Feedback.jsx';
-import { formatDateTime, lecturerNames, periodLabel, plural } from '../lib/format.js';
+import {
+  classLabel,
+  formatDateTime,
+  lecturerNames,
+  periodLabel,
+  plural,
+} from '../lib/format.js';
 import { groupStyle } from '../lib/colors.js';
 
 function RunPicker({ scope, currentId }) {
@@ -37,7 +43,8 @@ function RunPicker({ scope, currentId }) {
       >
         {runs.map((item) => (
           <option key={item.id} value={item.id}>
-            {formatDateTime(item.createdAt)} · {item.colorCount} warna
+            {formatDateTime(item.createdAt)} · {item.colorCount} warna ·{' '}
+            {item.scopeLabel ?? item.className}
           </option>
         ))}
       </Select>
@@ -178,7 +185,8 @@ export default function ResultsPage() {
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4">
               <div>
                 <h2 className="text-base font-semibold">
-                  {run.className} · {periodLabel(run.academicYear, run.term)}
+                  {run.scopeLabel ?? classLabel({ name: run.className, cohortYear: run.cohortYear })}{' '}
+                  · {periodLabel(run.academicYear, run.term)}
                 </h2>
                 <p className="mt-0.5 text-[13px] text-muted">
                   {formatDateTime(run.createdAt)} · {CONFLICT_MODE_LABEL[run.conflictMode] ?? run.conflictMode} ·{' '}
